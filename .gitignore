@@ -12,3 +12,7 @@
 
 .ruff_cache
 
+cdk.out
+
+__pycache__
+

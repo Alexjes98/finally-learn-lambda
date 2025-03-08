@@ -1,13 +1,10 @@
 from aws_cdk import (
     Stack,
     aws_lambda as lambda_,
-    aws_lambda_python_alpha as lambda_python,
     aws_iam as iam,
-    Duration,
+    Duration
 )
 from constructs import Construct
-import os
-
 
 class LambdaLearningStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -26,16 +23,16 @@ class LambdaLearningStack(Stack):
         plain_lambda = lambda_.Function(
             self, "PlainLambdaFunction",
             function_name="plain-lambda-function",
-            runtime=lambda_.Runtime.PYTHON_3_8,
+            runtime=lambda_.Runtime.PYTHON_3_10,
             handler="lambda_function.handler",
-            code=lambda_.Code.from_asset("lambda-functions/plain-lambda", 
-                bundling=lambda_.BundlingOptions(
-                    image=lambda_.Runtime.PYTHON_3_8.bundling_image,
-                    command=[
+            code=lambda_.Code.from_asset("../lambda-functions/plain-lambda", 
+                bundling={
+                    "image": lambda_.Runtime.PYTHON_3_10.bundling_image,
+                    "command": [
                         "bash", "-c",
                         "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
                     ]
-                )
+                }
             ),
             timeout=Duration.seconds(30),
             memory_size=128,
@@ -47,7 +44,7 @@ class LambdaLearningStack(Stack):
         docker_lambda = lambda_.DockerImageFunction(
             self, "DockerLambdaFunction",
             function_name="docker-lambda-function",
-            code=lambda_.DockerImageCode.from_image_asset("lambda-functions/docker-lambda"),
+            code=lambda_.DockerImageCode.from_image_asset("../lambda-functions/docker-lambda"),
             timeout=Duration.seconds(30),
             memory_size=128,
             role=lambda_role,
@@ -58,16 +55,16 @@ class LambdaLearningStack(Stack):
         # First, create a layer for dependencies
         dependencies_layer = lambda_.LayerVersion(
             self, "DependenciesLayer",
-            code=lambda_.Code.from_asset("lambda-functions/layer-lambda/layers/dependencies", 
-                bundling=lambda_.BundlingOptions(
-                    image=lambda_.Runtime.PYTHON_3_8.bundling_image,
-                    command=[
+            code=lambda_.Code.from_asset("../lambda-functions/layer-lambda/layers/dependencies", 
+                bundling={
+                    "image": lambda_.Runtime.PYTHON_3_10.bundling_image,
+                    "command": [
                         "bash", "-c",
                         "pip install -r requirements.txt -t /asset-output/python && cp -au . /asset-output"
                     ]
-                )
+                }
             ),
-            compatible_runtimes=[lambda_.Runtime.PYTHON_3_8],
+            compatible_runtimes=[lambda_.Runtime.PYTHON_3_10],
             description="Layer containing external dependencies",
         )
 
@@ -75,9 +72,9 @@ class LambdaLearningStack(Stack):
         layer_lambda = lambda_.Function(
             self, "LayerLambdaFunction",
             function_name="layer-lambda-function",
-            runtime=lambda_.Runtime.PYTHON_3_8,
+            runtime=lambda_.Runtime.PYTHON_3_10,
             handler="lambda_function.handler",
-            code=lambda_.Code.from_asset("lambda-functions/layer-lambda/src"),
+            code=lambda_.Code.from_asset("../lambda-functions/layer-lambda/src"),
             timeout=Duration.seconds(30),
             memory_size=128,
             role=lambda_role,
