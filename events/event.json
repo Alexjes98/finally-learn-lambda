@@ -1,0 +1,13 @@
+{
+  "httpMethod": "GET",
+  "path": "/",
+  "queryStringParameters": {
+    "name": "User"
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "",
+  "isBase64Encoded": false,
+  "birthDate": "1990-05-15"
+} 

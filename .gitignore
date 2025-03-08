@@ -1,0 +1,14 @@
+.venv
+
+.env
+
+.DS_Store
+
+.idea
+
+.aws-sam
+
+.pytest_cache
+
+.ruff_cache
+

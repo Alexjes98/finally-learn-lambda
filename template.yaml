@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS Lambda Learning Project - Local Testing
+
+Resources:
+  PlainLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda-functions/plain-lambda/
+      Handler: lambda_function.handler
+      Runtime: python3.10
+      Timeout: 30
+      MemorySize: 128
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /plain
+            Method: get
+
+  DockerLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: lambda-docker:latest
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /docker
+            Method: get
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: lambda-functions/docker-lambda
+      DockerTag: lambda-docker
+
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: dependencies-layer
+      Description: Layer containing external dependencies
+      ContentUri: lambda-functions/layer-lambda/layers/dependencies/
+      CompatibleRuntimes:
+        - python3.10
+
+  LayerLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda-functions/layer-lambda/src/
+      Handler: lambda_function.handler
+      Runtime: python3.10
+      Timeout: 30
+      MemorySize: 128
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /layer
+            Method: get
+
+Outputs:
+  PlainLambdaFunction:
+    Description: "Plain Lambda Function ARN"
+    Value: !GetAtt PlainLambdaFunction.Arn
+
+  DockerLambdaFunction:
+    Description: "Docker Lambda Function ARN"
+    Value: !GetAtt DockerLambdaFunction.Arn
+
+  LayerLambdaFunction:
+    Description: "Layer Lambda Function ARN"
+    Value: !GetAtt LayerLambdaFunction.Arn
+
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/" 
