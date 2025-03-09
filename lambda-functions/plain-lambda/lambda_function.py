@@ -1,49 +1,82 @@
 import json
 import requests
-import pandas as pd
-import numpy as np
-import logging
+from datetime import datetime
+from dateutil.parser import parse
+import jwt
+from utils.helpers import format_response, process_data
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+def validate_event(event: dict) -> tuple[bool, str]:
+    """
+    Simple event validation without using Pydantic
+    """
+    required_fields = ['user_id', 'action']
+    for field in required_fields:
+        if not event.get("body", {}).get(field):
+            return False, f"Missing required field: {field}"
+    return True, ""
 
-def handler(event, context):
+def handler(event: dict, context) -> dict:
     """
-    A simple Lambda function that uses external dependencies.
+    A simple Lambda function demonstrating various Python packages.
     
-    This function:
-    1. Receives an event
-    2. Makes an HTTP request using the requests library
-    3. Creates a pandas DataFrame and performs a simple calculation
-    4. Returns a formatted response
+    Features:
+    1. Basic request validation
+    2. HTTP requests with the requests library
+    3. Date parsing with dateutil
+    4. JWT token generation
+    5. Local utility usage
     """
-    logger.info("Received event: %s", json.dumps(event))
-    
+    print(event)
     try:
-        # Use the requests library to make an HTTP request
-        response = requests.get("https://httpbin.org/json")
-        response_data = response.json()
+        # Validate incoming event
+        is_valid, error_message = validate_event(event)
+        if not is_valid:
+            raise ValueError(error_message)
         
-        # Use pandas and numpy to perform a simple calculation
-        df = pd.DataFrame({
-            'numbers': np.random.randint(0, 100, size=5)
-        })
-        mean_value = df['numbers'].mean()
+        # Extract and validate event data
+        user_id = event.get('user_id', '')
+        action = event.get('action', '')
+        timestamp = event.get('timestamp', datetime.now().isoformat())
         
-        return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Plain Lambda function executed successfully',
-                'mean_value': float(mean_value),
-                'http_response': response_data,
-                'event': event
-            })
+        # Parse and format the timestamp
+        parsed_timestamp = parse(timestamp)
+        
+        # Make an example HTTP request
+        response = requests.get('https://httpbin.org/uuid')
+        request_id = response.json().get('uuid', '')
+        
+        # Generate a sample JWT token
+        token_payload = {
+            'user_id': user_id,
+            'action': action,
+            'timestamp': parsed_timestamp.isoformat(),
+            'request_id': request_id
         }
+        jwt_token = jwt.encode(
+            token_payload,
+            'your-secret-key',  # In production, use AWS Secrets Manager
+            algorithm='HS256'
+        )
+        
+        # Process data using local utility
+        processed_event = process_data(event)
+        
+        # Prepare response
+        response_body = {
+            'message': 'Lambda function executed successfully',
+            'processed_timestamp': parsed_timestamp.isoformat(),
+            'request_id': request_id,
+            'jwt_token': jwt_token,
+            'processed_event': processed_event
+        }
+        
+        print(f"Successfully processed request for user_id: {user_id}, action: {action}")
+        
+        return format_response(200, json.dumps(response_body))
+        
     except Exception as e:
-        logger.error("Error: %s", str(e))
-        return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'message': f'Error: {str(e)}'
-            })
-        } 
+        print(f"Error processing request: {str(e)}")
+        error_response = {
+            'message': f'Error: {str(e)}'
+        }
+        return format_response(500, json.dumps(error_response)) 

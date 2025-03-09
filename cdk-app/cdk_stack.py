@@ -30,14 +30,19 @@ class LambdaLearningStack(Stack):
                     "image": lambda_.Runtime.PYTHON_3_10.bundling_image,
                     "command": [
                         "bash", "-c",
-                        "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
+                        "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output && find /asset-output -type f -name '*.py' -exec chmod 644 {} +"
                     ]
                 }
             ),
             timeout=Duration.seconds(30),
-            memory_size=128,
+            memory_size=256,  # Increased memory for better performance
             role=lambda_role,
-            description="A simple Lambda function with bundled dependencies",
+            environment={
+                "POWERTOOLS_SERVICE_NAME": "plain-lambda",
+                "POWERTOOLS_METRICS_NAMESPACE": "PlainLambda",
+                "LOG_LEVEL": "INFO"
+            },
+            description="A Lambda function with pure Python dependencies demonstrating various features",
         )
 
         # 2. Docker Image Lambda Function
