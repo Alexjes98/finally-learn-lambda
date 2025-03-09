@@ -27,3 +27,7 @@ END RequestId: 14b865dd-1d40-41d5-b56e-c495bbf909b0
 
 REPORT RequestId: 14b865dd-1d40-41d5-b56e-c495bbf909b0	Duration: 279.77 ms	Billed Duration: 280 ms	Memory Size: 128 MB	Max Memory Used: 57 MB	Init Duration: 400.09 ms
 ```
+
+Locally Working ✅
+
+# Observations and Recommendations

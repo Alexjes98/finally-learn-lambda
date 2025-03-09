@@ -5,9 +5,26 @@ from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw
 import io
 import base64
+from pydantic import BaseModel, Field, ValidationError
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+class Event(BaseModel):
+    user_id: str = Field(..., description="The user ID")
+    action: str = Field(..., description="The action to perform")
+    
+def validate_event(event: dict) -> tuple[bool, str]:
+    """
+    Validate the event using Pydantic
+    """
+    try:
+        logger.info("Validating event: %s", json.dumps(event))
+        body = event.get("body", {})
+        Event(**body)
+        return True, ""
+    except ValidationError as e:
+        return False, str(e)
 
 def handler(event, context):
     """
@@ -22,8 +39,15 @@ def handler(event, context):
     logger.info("Received event: %s", json.dumps(event))
     
     try:
+        is_valid, error_message = validate_event(event)
+        if not is_valid:
+            raise ValueError(error_message)
+           
+        user_id = event.get("body", {}).get("user_id")
+        action = event.get("body", {}).get("action")
+        logger.info("User ID: %s, Action: %s", user_id, action)
         # Use BeautifulSoup to parse HTML content
-        response = requests.get("https://example.com")
+        response = requests.get("https://www.google.com")
         soup = BeautifulSoup(response.text, 'html.parser')
         title = soup.title.string
         
